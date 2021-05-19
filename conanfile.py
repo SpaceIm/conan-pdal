@@ -134,6 +134,7 @@ class PdalConan(ConanFile):
         cmake.install()
         tools.rmdir(os.path.join(self.package_folder, 'lib', 'cmake'))
         tools.rmdir(os.path.join(self.package_folder, 'lib', 'pkgconfig'))
+        tools.remove_files_by_mask(os.path.join(self.package_folder, "bin"), "pdal-config*")
         # Remove static pdal_boost (embedded in pdal_util, always shared)
         if not self.options.shared:
             tools.remove_files_by_mask(os.path.join(self.package_folder, "lib"), "*pdal_boost.*")
