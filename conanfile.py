@@ -28,12 +28,12 @@ class PdalConan(ConanFile):
     default_options = {
         "shared": False,
         "fPIC": True,
-        "with_unwind": False,
+        "with_unwind": True,
         "with_xml": True,
         "with_lazperf": False, # TODO: should be True
         "with_laszip": True,
         "with_zlib": True,
-        "with_lzma": True,
+        "with_lzma": False,
         "with_zstd": True,
     }
 
