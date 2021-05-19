@@ -20,7 +20,10 @@ class PdalConan(ConanFile):
         "with_unwind": [True, False],
         "with_xml": [True, False],
         "with_zstd": [True, False],
+        "with_lazperf": [True, False],
         "with_laszip": [True, False],
+        "with_zlib": [True, False],
+        "with_lzma": [True, False],
     }
     default_options = {
         "shared": False,
@@ -28,7 +31,10 @@ class PdalConan(ConanFile):
         "with_unwind": False,
         "with_xml": True,
         "with_zstd": True,
+        "with_lazperf": False, # should be True
         "with_laszip": True,
+        "with_zlib": True,
+        "with_lzma": False,
     }
 
     exports_sources = ["CMakeLists.txt", "patches/*"]
@@ -60,14 +66,21 @@ class PdalConan(ConanFile):
         self.requires("boost/1.76.0")
         self.requires("eigen/3.3.9")
         self.requires("gdal/3.2.1")
+        self.requires("libcurl/7.75.0") # mandotory dependency of arbiter (to remove if arbiber is unvendored)
         self.requires("libgeotiff/1.6.0")
         self.requires("nanoflann/1.3.2")
         if self.options.with_xml:
             self.requires("libxml2/2.9.10")
         if self.options.with_zstd:
             self.requires("zstd/1.5.0")
+        if self.options.with_lazperf:
+            raise ConanInvalidConfiguration("lazperf recipe not yet available in CCI")
         if self.options.with_laszip:
             self.requires("laszip/3.4.3")
+        if self.options.with_zlib:
+            self.requires("zlib/1.2.11")
+        if self.options.with_lzma:
+            self.requires("xz_utils/5.2.5")
         if self.options.get_safe("with_unwind"):
             self.requires("libunwind/1.5.0")
 
@@ -90,11 +103,12 @@ class PdalConan(ConanFile):
         self._cmake = CMake(self)
         self._cmake.definitions["PDAL_BUILD_STATIC"] = not self.options.shared
         self._cmake.definitions["WITH_TESTS"] = False
-        self._cmake.definitions["WITH_LAZPERF"] = False
+        self._cmake.definitions["WITH_LAZPERF"] = self.options.with_lazperf
         self._cmake.definitions["WITH_LASZIP"] = self.options.with_laszip
-        self._cmake.definitions["WITH_STATIC_LASZIP"] = True # doesn't really matter but avoid to inject useless definition
+        self._cmake.definitions["WITH_STATIC_LASZIP"] = True # doesn't really matter but avoids to inject useless definition
         self._cmake.definitions["WITH_ZSTD"] = self.options.with_zstd
-        self._cmake.definitions["WITH_ZLIB"] = True
+        self._cmake.definitions["WITH_ZLIB"] = self.options.with_zlib
+        self._cmake.definitions["WITH_LZMA"] = self.options.with_lzma
         # disable plugin that requires postgresql
         self._cmake.definitions["BUILD_PLUGIN_PGPOINTCLOUD"] = False
         self._cmake.configure()
