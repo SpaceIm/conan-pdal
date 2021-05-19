@@ -59,6 +59,7 @@ class PdalConan(ConanFile):
         # - switch from vendored arbiter (not in CCI). disabled openssl and curl are deps of arbiter
         # - switch from vendor/nlohmann to nlohmann_json (in CCI)
         # - evaluate dependency to boost instead of boost parts in vendor/pdalboost
+        self.requires("eigen/3.3.9")
         self.requires("gdal/3.2.1")
         self.requires("libgeotiff/1.6.0")
         self.requires("nanoflann/1.3.2")
@@ -102,6 +103,8 @@ class PdalConan(ConanFile):
                 os.path.join(self._source_subfolder, "CMakeLists.txt"),
                 "include(${PDAL_CMAKE_DIR}/libxml2.cmake)",
                 "#include(${PDAL_CMAKE_DIR}/libxml2.cmake)")
+        # remove vendored eigen
+        tools.rmdir(os.path.join(self._source_subfolder, 'vendor', 'eigen'))
         # remove vendored nanoflann. include path is patched
         tools.rmdir(os.path.join(self._source_subfolder, 'vendor', 'nanoflann'))
 
