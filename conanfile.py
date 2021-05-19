@@ -108,6 +108,14 @@ class PdalConan(ConanFile):
         tools.rmdir(os.path.join(self._source_subfolder, 'vendor', 'eigen'))
         # remove vendored nanoflann. include path is patched
         tools.rmdir(os.path.join(self._source_subfolder, 'vendor', 'nanoflann'))
+        # No rpath manipulation
+        tools.replace_in_file(os.path.join(self._source_subfolder, "CMakeLists.txt"),
+                              "include(${PDAL_CMAKE_DIR}/rpath.cmake)",
+                              "")
+        # No reexport
+        tools.replace_in_file(os.path.join(self._source_subfolder, "CMakeLists.txt"),
+                              "set(PDAL_REEXPORT \"-Wl,-reexport_library,$<TARGET_FILE:${PDAL_UTIL_LIB_NAME}>\")",
+                              "")
         # fix static build
         if not self.options.shared:
             tools.replace_in_file(os.path.join(self._source_subfolder, "CMakeLists.txt"),
@@ -119,6 +127,9 @@ class PdalConan(ConanFile):
             tools.replace_in_file(os.path.join(self._source_subfolder, "cmake", "macros.cmake"),
                                   "        install(TARGETS ${_name}",
                                   "    endif()\n    if (PDAL_LIB_TYPE STREQUAL \"STATIC\" OR NOT ${_library_type} STREQUAL \"STATIC\")\n         install(TARGETS ${_name}")
+            tools.replace_in_file(os.path.join(self._source_subfolder, "pdal", "util", "CMakeLists.txt"),
+                                  "PDAL_ADD_FREE_LIBRARY(${PDAL_UTIL_LIB_NAME} SHARED ${PDAL_UTIL_SOURCES})",
+                                  "PDAL_ADD_FREE_LIBRARY(${PDAL_UTIL_LIB_NAME} ${PDAL_LIB_TYPE} ${PDAL_UTIL_SOURCES})")
 
     def build(self):
         self._patch_sources()
@@ -137,9 +148,6 @@ class PdalConan(ConanFile):
         tools.rmdir(os.path.join(self.package_folder, 'lib', 'cmake'))
         tools.rmdir(os.path.join(self.package_folder, 'lib', 'pkgconfig'))
         tools.remove_files_by_mask(os.path.join(self.package_folder, "bin"), "pdal-config*")
-        # Remove static pdal_boost (embedded in pdal_util, always shared)
-        if not self.options.shared:
-            tools.remove_files_by_mask(os.path.join(self.package_folder, "lib"), "*pdal_boost.*")
 
     def package_info(self):
         self.cpp_info.names["cmake_find_package"] = "PDAL"
@@ -148,6 +156,6 @@ class PdalConan(ConanFile):
         pdal_base_name = "pdalcpp" if self.settings.os == "Windows" or tools.is_apple_os(self.settings.os) else "pdal_base"
         self.cpp_info.libs = [pdal_base_name, "pdal_util"]
         if not self.options.shared:
-            self.cpp_info.libs.extend(["pdal_arbiter", "pdal_kazhdan"])
+            self.cpp_info.libs.extend(["pdal_arbiter", "pdal_kazhdan", "pdal_boost"])
         if self.settings.os == "Linux":
             self.cpp_info.system_libs.extend(["dl", "m"])
