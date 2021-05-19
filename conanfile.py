@@ -57,7 +57,7 @@ class PdalConan(ConanFile):
         # TODO package improvements:
         # - switch from vendored arbiter (not in CCI). disabled openssl and curl are deps of arbiter
         # - switch from vendor/nlohmann to nlohmann_json (in CCI)
-        # - evaluate dependency to boost instead of boost parts in vendor/pdalboost
+        self.requires("boost/1.76.0")
         self.requires("eigen/3.3.9")
         self.requires("gdal/3.2.1")
         self.requires("libgeotiff/1.6.0")
@@ -70,6 +70,15 @@ class PdalConan(ConanFile):
             self.requires("laszip/3.4.3")
         if self.options.get_safe("with_unwind"):
             self.requires("libunwind/1.5.0")
+
+    @property
+    def _required_boost_components(self):
+        return ["filesystem"]
+
+    def validate(self):
+        miss_boost_required_comp = any(getattr(self.options["boost"], "without_{}".format(boost_comp), True) for boost_comp in self._required_boost_components)
+        if self.options["boost"].header_only or miss_boost_required_comp:
+            raise ConanInvalidConfiguration("{0} requires non header-only boost with these components: {1}".format(self.name, ", ".join(self._required_boost_components)))
 
     def source(self):
         tools.get(**self.conan_data["sources"][self.version],
@@ -108,6 +117,15 @@ class PdalConan(ConanFile):
         tools.rmdir(os.path.join(self._source_subfolder, 'vendor', 'eigen'))
         # remove vendored nanoflann. include path is patched
         tools.rmdir(os.path.join(self._source_subfolder, 'vendor', 'nanoflann'))
+        # remove vendored boost
+        tools.rmdir(os.path.join(self._source_subfolder, "vendor", "pdalboost"))
+        tools.replace_in_file(os.path.join(self._source_subfolder, "CMakeLists.txt"),
+                              "add_subdirectory(vendor/pdalboost)",
+                              "")
+        tools.replace_in_file(os.path.join(self._source_subfolder, "pdal", "util", "CMakeLists.txt"),
+                              "${PDAL_BOOST_LIB_NAME}", "${CONAN_LIBS}")
+        tools.replace_in_file(os.path.join(self._source_subfolder, "pdal", "util", "FileUtils.cpp"),
+                              "pdalboost::", "boost::")
         # No rpath manipulation
         tools.replace_in_file(os.path.join(self._source_subfolder, "CMakeLists.txt"),
                               "include(${PDAL_CMAKE_DIR}/rpath.cmake)",
@@ -123,7 +141,7 @@ class PdalConan(ConanFile):
                                   "")
             tools.replace_in_file(os.path.join(self._source_subfolder, "CMakeLists.txt"),
                                   "${PDAL_BASE_LIB_NAME} ${PDAL_UTIL_LIB_NAME}",
-                                  "${PDAL_BASE_LIB_NAME} ${PDAL_UTIL_LIB_NAME} ${PDAL_ARBITER_LIB_NAME} ${PDAL_KAZHDAN_LIB_NAME} ${PDAL_BOOST_LIB_NAME}")
+                                  "${PDAL_BASE_LIB_NAME} ${PDAL_UTIL_LIB_NAME} ${PDAL_ARBITER_LIB_NAME} ${PDAL_KAZHDAN_LIB_NAME}")
             tools.replace_in_file(os.path.join(self._source_subfolder, "cmake", "macros.cmake"),
                                   "        install(TARGETS ${_name}",
                                   "    endif()\n    if (PDAL_LIB_TYPE STREQUAL \"STATIC\" OR NOT ${_library_type} STREQUAL \"STATIC\")\n         install(TARGETS ${_name}")
@@ -156,6 +174,6 @@ class PdalConan(ConanFile):
         pdal_base_name = "pdalcpp" if self.settings.os == "Windows" or tools.is_apple_os(self.settings.os) else "pdal_base"
         self.cpp_info.libs = [pdal_base_name, "pdal_util"]
         if not self.options.shared:
-            self.cpp_info.libs.extend(["pdal_arbiter", "pdal_kazhdan", "pdal_boost"])
+            self.cpp_info.libs.extend(["pdal_arbiter", "pdal_kazhdan"])
         if self.settings.os == "Linux":
             self.cpp_info.system_libs.extend(["dl", "m"])
