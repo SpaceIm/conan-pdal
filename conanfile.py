@@ -19,22 +19,22 @@ class PdalConan(ConanFile):
         "fPIC": [True, False],
         "with_unwind": [True, False],
         "with_xml": [True, False],
-        "with_zstd": [True, False],
         "with_lazperf": [True, False],
         "with_laszip": [True, False],
         "with_zlib": [True, False],
         "with_lzma": [True, False],
+        "with_zstd": [True, False],
     }
     default_options = {
         "shared": False,
         "fPIC": True,
         "with_unwind": False,
         "with_xml": True,
-        "with_zstd": True,
         "with_lazperf": False, # TODO: should be True
         "with_laszip": True,
         "with_zlib": True,
         "with_lzma": False,
+        "with_zstd": True,
     }
 
     exports_sources = ["CMakeLists.txt", "patches/*"]
@@ -127,6 +127,11 @@ class PdalConan(ConanFile):
                 os.path.join(self._source_subfolder, "CMakeLists.txt"),
                 "include(${PDAL_CMAKE_DIR}/libxml2.cmake)",
                 "#include(${PDAL_CMAKE_DIR}/libxml2.cmake)")
+        # disabling libunwind support is only done via patching
+        if not self.options.get_safe("with_unwind", False):
+            tools.replace_in_file(
+                os.path.join(self._source_subfolder, "pdal", "util", "CMakeLists.txt"),
+                "include(${PDAL_CMAKE_DIR}/unwind.cmake)", "")
         # remove vendored eigen
         tools.rmdir(os.path.join(self._source_subfolder, "vendor", "eigen"))
         # remove vendored nanoflann. include path is patched
