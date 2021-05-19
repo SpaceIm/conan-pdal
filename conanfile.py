@@ -188,3 +188,19 @@ class PdalConan(ConanFile):
             self.cpp_info.libs.extend(["pdal_arbiter", "pdal_kazhdan"])
         if self.settings.os == "Linux":
             self.cpp_info.system_libs.extend(["dl", "m"])
+        self.cpp_info.requires = [
+            "boost::filesystem", "eigen::eigen", "gdal::gdal",
+            "libcurl::libcurl", "libgeotiff::libgeotiff", "nanoflann::nanoflann"
+        ]
+        if self.options.with_xml:
+            self.cpp_info.requires.append("libxml2::libxml2")
+        if self.options.with_zstd:
+            self.cpp_info.requires.append("zstd::zstd")
+        if self.options.with_laszip:
+            self.cpp_info.requires.append("laszip::laszip")
+        if self.options.with_zlib:
+            self.cpp_info.requires.append("zlib::zlib")
+        if self.options.with_lzma:
+            self.cpp_info.requires.append("xz_utils::xz_utils")
+        if self.options.get_safe("with_unwind"):
+            self.cpp_info.requires.append("libunwind::libunwind")
