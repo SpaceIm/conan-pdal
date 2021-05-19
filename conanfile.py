@@ -119,7 +119,7 @@ class PdalConan(ConanFile):
             tools.patch(**patch)
         # drop conflicting CMake files
         # LASzip works fine
-        for module in ('ZSTD', 'ICONV', 'GeoTIFF', 'Curl'):
+        for module in ("ZSTD", "ICONV", "GeoTIFF", "Curl"):
             os.remove(os.path.join(self._source_subfolder, "cmake", "modules", "Find"+module+".cmake"))
         # disabling libxml2 support is only done via patching
         if not self.options.with_xml:
@@ -128,9 +128,9 @@ class PdalConan(ConanFile):
                 "include(${PDAL_CMAKE_DIR}/libxml2.cmake)",
                 "#include(${PDAL_CMAKE_DIR}/libxml2.cmake)")
         # remove vendored eigen
-        tools.rmdir(os.path.join(self._source_subfolder, 'vendor', 'eigen'))
+        tools.rmdir(os.path.join(self._source_subfolder, "vendor", "eigen"))
         # remove vendored nanoflann. include path is patched
-        tools.rmdir(os.path.join(self._source_subfolder, 'vendor', 'nanoflann'))
+        tools.rmdir(os.path.join(self._source_subfolder, "vendor", "nanoflann"))
         # remove vendored boost
         tools.rmdir(os.path.join(self._source_subfolder, "vendor", "pdalboost"))
         tools.replace_in_file(os.path.join(self._source_subfolder, "CMakeLists.txt"),
@@ -177,8 +177,8 @@ class PdalConan(ConanFile):
         self.copy("LICENSE.txt", src=self._source_subfolder, dst="licenses", ignore_case=True, keep_path=False)
         cmake = self._configure_cmake()
         cmake.install()
-        tools.rmdir(os.path.join(self.package_folder, 'lib', 'cmake'))
-        tools.rmdir(os.path.join(self.package_folder, 'lib', 'pkgconfig'))
+        tools.rmdir(os.path.join(self.package_folder, "lib", "cmake"))
+        tools.rmdir(os.path.join(self.package_folder, "lib", "pkgconfig"))
         tools.remove_files_by_mask(os.path.join(self.package_folder, "bin"), "pdal-config*")
 
     def package_info(self):
