@@ -144,7 +144,7 @@ class PdalConan(ConanFile):
     def package_info(self):
         self.cpp_info.names["cmake_find_package"] = "PDAL"
         self.cpp_info.names["cmake_find_package_multi"] = "PDAL"
-        self.cpp_info.names["pkg_config"] = "PDAL"
+        self.cpp_info.names["pkg_config"] = "pdal"
         pdal_base_name = "pdalcpp" if self.settings.os == "Windows" or tools.is_apple_os(self.settings.os) else "pdal_base"
         self.cpp_info.libs = [pdal_base_name, "pdal_util"]
         if not self.options.shared:
