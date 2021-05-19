@@ -44,9 +44,6 @@ class PdalConan(ConanFile):
             del self.options.with_unwind
 
     def configure(self):
-        # upstream export/install targets do not work with static builds
-        if not self.options.shared:
-            raise ConanInvalidConfiguration("pdal does not support building as a static lib yet")
         if self.options.shared:
             del self.options.fPIC
         if self.settings.compiler.cppstd:
@@ -80,9 +77,11 @@ class PdalConan(ConanFile):
         if self._cmake:
             return self._cmake
         self._cmake = CMake(self)
+        self._cmake.definitions["PDAL_BUILD_STATIC"] = not self.options.shared
         self._cmake.definitions["WITH_TESTS"] = False
         self._cmake.definitions["WITH_LAZPERF"] = False
         self._cmake.definitions["WITH_LASZIP"] = self.options.with_laszip
+        self._cmake.definitions["WITH_STATIC_LASZIP"] = True # doesn't really matter but avoid to inject useless definition
         self._cmake.definitions["WITH_ZSTD"] = self.options.with_zstd
         self._cmake.definitions["WITH_ZLIB"] = True
         # disable plugin that requires postgresql
@@ -107,6 +106,17 @@ class PdalConan(ConanFile):
         tools.rmdir(os.path.join(self._source_subfolder, 'vendor', 'eigen'))
         # remove vendored nanoflann. include path is patched
         tools.rmdir(os.path.join(self._source_subfolder, 'vendor', 'nanoflann'))
+        # fix static build
+        if not self.options.shared:
+            tools.replace_in_file(os.path.join(self._source_subfolder, "CMakeLists.txt"),
+                                  "add_definitions(\"-DPDAL_DLL_EXPORT=1\")",
+                                  "")
+            tools.replace_in_file(os.path.join(self._source_subfolder, "CMakeLists.txt"),
+                                  "${PDAL_BASE_LIB_NAME} ${PDAL_UTIL_LIB_NAME}",
+                                  "${PDAL_BASE_LIB_NAME} ${PDAL_UTIL_LIB_NAME} ${PDAL_ARBITER_LIB_NAME} ${PDAL_KAZHDAN_LIB_NAME} ${PDAL_BOOST_LIB_NAME}")
+            tools.replace_in_file(os.path.join(self._source_subfolder, "cmake", "macros.cmake"),
+                                  "        install(TARGETS ${_name}",
+                                  "    endif()\n    if (PDAL_LIB_TYPE STREQUAL \"STATIC\" OR NOT ${_library_type} STREQUAL \"STATIC\")\n         install(TARGETS ${_name}")
 
     def build(self):
         self._patch_sources()
@@ -124,11 +134,17 @@ class PdalConan(ConanFile):
         cmake.install()
         tools.rmdir(os.path.join(self.package_folder, 'lib', 'cmake'))
         tools.rmdir(os.path.join(self.package_folder, 'lib', 'pkgconfig'))
+        # Remove static pdal_boost (embedded in pdal_util, always shared)
+        if not self.options.shared:
+            tools.remove_files_by_mask(os.path.join(self.package_folder, "lib"), "*pdal_boost.*")
 
     def package_info(self):
         self.cpp_info.names["cmake_find_package"] = "PDAL"
         self.cpp_info.names["cmake_find_package_multi"] = "PDAL"
         self.cpp_info.names["pkg_config"] = "PDAL"
-        self.cpp_info.libs = tools.collect_libs(self)
+        pdal_base_name = "pdalcpp" if self.settings.os == "Windows" or tools.is_apple_os(self.settings.os) else "pdal_base"
+        self.cpp_info.libs = [pdal_base_name, "pdal_util"]
+        if not self.options.shared:
+            self.cpp_info.libs.extend(["pdal_arbiter", "pdal_kazhdan"])
         if self.settings.os == "Linux":
             self.cpp_info.system_libs.extend(["dl", "m"])
