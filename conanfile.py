@@ -121,50 +121,42 @@ class PdalConan(ConanFile):
         # LASzip works fine
         for module in ("ZSTD", "ICONV", "GeoTIFF", "Curl"):
             os.remove(os.path.join(self._source_subfolder, "cmake", "modules", "Find"+module+".cmake"))
+
+        top_cmakelists = os.path.join(self._source_subfolder, "CMakeLists.txt")
+        util_cmakelists = os.path.join(self._source_subfolder, "pdal", "util", "CMakeLists.txt")
+
         # disabling libxml2 support is only done via patching
         if not self.options.with_xml:
-            tools.replace_in_file(
-                os.path.join(self._source_subfolder, "CMakeLists.txt"),
-                "include(${PDAL_CMAKE_DIR}/libxml2.cmake)",
-                "#include(${PDAL_CMAKE_DIR}/libxml2.cmake)")
+            tools.replace_in_file(top_cmakelists, "include(${PDAL_CMAKE_DIR}/libxml2.cmake)", "")
         # disabling libunwind support is only done via patching
         if not self.options.get_safe("with_unwind", False):
-            tools.replace_in_file(
-                os.path.join(self._source_subfolder, "pdal", "util", "CMakeLists.txt"),
-                "include(${PDAL_CMAKE_DIR}/unwind.cmake)", "")
+            tools.replace_in_file(util_cmakelists, "include(${PDAL_CMAKE_DIR}/unwind.cmake)", "")
         # remove vendored eigen
         tools.rmdir(os.path.join(self._source_subfolder, "vendor", "eigen"))
         # remove vendored nanoflann. include path is patched
         tools.rmdir(os.path.join(self._source_subfolder, "vendor", "nanoflann"))
         # remove vendored boost
         tools.rmdir(os.path.join(self._source_subfolder, "vendor", "pdalboost"))
-        tools.replace_in_file(os.path.join(self._source_subfolder, "CMakeLists.txt"),
-                              "add_subdirectory(vendor/pdalboost)",
-                              "")
-        tools.replace_in_file(os.path.join(self._source_subfolder, "pdal", "util", "CMakeLists.txt"),
-                              "${PDAL_BOOST_LIB_NAME}", "${CONAN_LIBS}")
+        tools.replace_in_file(top_cmakelists, "add_subdirectory(vendor/pdalboost)", "")
+        tools.replace_in_file(util_cmakelists, "${PDAL_BOOST_LIB_NAME}", "${CONAN_LIBS}")
         tools.replace_in_file(os.path.join(self._source_subfolder, "pdal", "util", "FileUtils.cpp"),
                               "pdalboost::", "boost::")
         # No rpath manipulation
-        tools.replace_in_file(os.path.join(self._source_subfolder, "CMakeLists.txt"),
-                              "include(${PDAL_CMAKE_DIR}/rpath.cmake)",
-                              "")
+        tools.replace_in_file(top_cmakelists, "include(${PDAL_CMAKE_DIR}/rpath.cmake)", "")
         # No reexport
-        tools.replace_in_file(os.path.join(self._source_subfolder, "CMakeLists.txt"),
+        tools.replace_in_file(top_cmakelists,
                               "set(PDAL_REEXPORT \"-Wl,-reexport_library,$<TARGET_FILE:${PDAL_UTIL_LIB_NAME}>\")",
                               "")
         # fix static build
         if not self.options.shared:
-            tools.replace_in_file(os.path.join(self._source_subfolder, "CMakeLists.txt"),
-                                  "add_definitions(\"-DPDAL_DLL_EXPORT=1\")",
-                                  "")
-            tools.replace_in_file(os.path.join(self._source_subfolder, "CMakeLists.txt"),
+            tools.replace_in_file(top_cmakelists, "add_definitions(\"-DPDAL_DLL_EXPORT=1\")", "")
+            tools.replace_in_file(top_cmakelists,
                                   "${PDAL_BASE_LIB_NAME} ${PDAL_UTIL_LIB_NAME}",
                                   "${PDAL_BASE_LIB_NAME} ${PDAL_UTIL_LIB_NAME} ${PDAL_ARBITER_LIB_NAME} ${PDAL_KAZHDAN_LIB_NAME}")
             tools.replace_in_file(os.path.join(self._source_subfolder, "cmake", "macros.cmake"),
                                   "        install(TARGETS ${_name}",
                                   "    endif()\n    if (PDAL_LIB_TYPE STREQUAL \"STATIC\" OR NOT ${_library_type} STREQUAL \"STATIC\")\n         install(TARGETS ${_name}")
-            tools.replace_in_file(os.path.join(self._source_subfolder, "pdal", "util", "CMakeLists.txt"),
+            tools.replace_in_file(util_cmakelists,
                                   "PDAL_ADD_FREE_LIBRARY(${PDAL_UTIL_LIB_NAME} SHARED ${PDAL_UTIL_SOURCES})",
                                   "PDAL_ADD_FREE_LIBRARY(${PDAL_UTIL_LIB_NAME} ${PDAL_LIB_TYPE} ${PDAL_UTIL_SOURCES})")
 
