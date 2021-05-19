@@ -9,7 +9,7 @@ class PdalConan(ConanFile):
     name = "pdal"
     description = "PDAL is Point Data Abstraction Library. GDAL for point cloud data."
     license = "BSD-3-Clause"
-    topics = ("conan", "pdal", "gdal")
+    topics = ("conan", "pdal", "gdal", "point-cloud-data", "lidar")
     homepage = "https://pdal.io"
     url = "https://github.com/conan-io/conan-center-index"
 
