@@ -33,7 +33,7 @@ class PdalConan(ConanFile):
         "with_lazperf": False, # TODO: should be True
         "with_laszip": True,
         "with_zlib": True,
-        "with_lzma": False,
+        "with_lzma": True,
         "with_zstd": True,
     }
 
