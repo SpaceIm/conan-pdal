@@ -166,11 +166,6 @@ class PdalConan(ConanFile):
         cmake.build()
 
     def package(self):
-        self.copy("Copyright.txt", dst="licenses", src=self._source_subfolder)
-        cmake = self._configure_cmake()
-        cmake.install()
-
-    def package(self):
         self.copy("LICENSE.txt", src=self._source_subfolder, dst="licenses", ignore_case=True, keep_path=False)
         cmake = self._configure_cmake()
         cmake.install()
